@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B1220">
+<title>تحديد الهدف</title>
+<link rel="stylesheet" href="leaflet.css">
+<link rel="stylesheet" href="maplibre-gl.css">
+<style>
+  html, body { height: 100%; margin: 0; background: #0B1220; font-family: "Segoe UI", Tahoma, system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; display: none; background: #0B1220; }
+  #mapLeaflet { position: absolute; inset: 0; background: #0B1220; }
+  .maplibregl-map, .leaflet-container { font-family: inherit; }
+
+  .search-wrap {
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top));
+    left: 12px;
+    right: 12px;
+    z-index: 1005;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid #1B2A45;
+    border-radius: 16px;
+    background: rgba(19, 30, 51, 0.97);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  }
+
+  .search-bar input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: #E5EDF7;
+    font: inherit;
+    font-size: 14px;
+    padding: 9px 8px;
+    outline: none;
+  }
+  .search-bar input::placeholder { color: #93A4BD; }
+
+  .search-bar button {
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #059669, #34D399);
+    color: #04140E;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .results {
+    margin-top: 8px;
+    max-height: 40vh;
+    overflow-y: auto;
+    border: 1px solid #1B2A45;
+    border-radius: 16px;
+    background: rgba(19, 30, 51, 0.98);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.4);
+  }
+
+  .result {
+    padding: 11px 14px;
+    color: #E5EDF7;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(27, 42, 69, 0.9);
+  }
+  .result:last-child { border-bottom: 0; }
+  .result small { display: block; color: #93A4BD; font-size: 11px; margin-top: 3px; direction: ltr; }
+  .result.muted { color: #93A4BD; text-align: center; }
+
+  /* Fixed-size switch pill beside the zoom buttons; never shifts between maps. */
+  .map-button {
+    position: absolute;
+    right: 52px;
+    bottom: calc(158px + env(safe-area-inset-bottom));
+    z-index: 1010;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 74px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid #1B2A45;
+    border-radius: 12px;
+    background: rgba(19, 30, 51, 0.96);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    color: #38BDF8;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .map-menu {
+    position: absolute;
+    right: 10px;
+    bottom: calc(272px + env(safe-area-inset-bottom));
+    z-index: 1011;
+    width: 200px;
+    overflow: hidden;
+    border: 1px solid #1B2A45;
+    border-radius: 14px;
+    background: rgba(19, 30, 51, 0.99);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .map-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 14px;
+    border: 0;
+    border-bottom: 1px solid rgba(27, 42, 69, 0.9);
+    background: transparent;
+    color: #E5EDF7;
+    font: inherit;
+    font-size: 13px;
+    text-align: right;
+  }
+  .map-option:last-child { border-bottom: 0; }
+  .map-option .tick { color: #34D399; font-size: 12px; opacity: 0; }
+  .map-option.active { color: #34D399; }
+  .map-option.active .tick { opacity: 1; }
+
+  .locate {
+    position: absolute;
+    inset-inline-end: 14px;
+    bottom: calc(168px + env(safe-area-inset-bottom));
+    z-index: 900;
+    width: 48px;
+    height: 48px;
+    border: 1px solid #1B2A45;
+    border-radius: 50%;
+    background: rgba(19, 30, 51, 0.96);
+    color: #34D399;
+    font-size: 21px;
+    line-height: 1;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
+  .locate[disabled] { opacity: 0.55; }
+
+  .pin { display: flex; align-items: center; justify-content: center; }
+  .pin-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #34D399;
+    border: 3px solid #0B1220;
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.35);
+  }
+
+  .panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, rgba(11,18,32,0.99), rgba(11,18,32,0.86));
+  }
+
+  .coords {
+    direction: ltr;
+    text-align: center;
+    color: #38BDF8;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 12px;
+    min-height: 20px;
+  }
+
+  .row { display: flex; gap: 10px; }
+
+  .panel button {
+    flex: 1;
+    border: 0;
+    border-radius: 14px;
+    padding: 14px;
+    font: inherit;
+    font-size: 15px;
+  }
+
+  #confirm { background: linear-gradient(135deg, #059669, #34D399); color: #04140E; font-weight: 700; }
+  #confirm:disabled { opacity: 0.4; }
+  #cancel { background: #1B2A45; color: #E5EDF7; }
+
+  .attribution {
+    margin-top: 10px;
+    text-align: center;
+    color: #93A4BD;
+    font-size: 10px;
+  }
+
+  #toast {
+    position: absolute;
+    left: 50%;
+    bottom: calc(210px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 1100;
+    max-width: 80%;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: rgba(34, 48, 74, 0.97);
+    color: #E5EDF7;
+    font-size: 12px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+
+  .error {
+    position: absolute;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #0B1220;
+    color: #FBBF24;
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .error[hidden], .results[hidden], .map-menu[hidden] { display: none; }
+
+  .maplibregl-ctrl-bottom-right {
+    bottom: calc(158px + env(safe-area-inset-bottom));
+    right: 10px;
+  }
+  .leaflet-bottom.leaflet-right {
+    bottom: calc(158px + env(safe-area-inset-bottom));
+    right: 10px;
+  }
+
+  .maplibregl-ctrl-group {
+    background: #131E33 !important;
+    border: 1px solid #1B2A45 !important;
+  }
+  .maplibregl-ctrl-group button + button { border-top-color: #1B2A45 !important; }
+  .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(180deg); }
+
+  .leaflet-control-zoom a {
+    background: #131E33 !important;
+    color: #E5EDF7 !important;
+    border-bottom-color: #1B2A45 !important;
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="mapLeaflet"></div>
+
+<div class="search-wrap">
+  <div class="search-bar">
+    <input id="searchInput" type="search" placeholder="ابحث عن مكان…" autocomplete="off" enterkeyhint="search">
+    <button id="searchBtn">بحث</button>
+  </div>
+  <div id="searchResults" class="results" hidden></div>
+</div>
+
+<button id="mapButton" class="map-button">Google</button>
+<div id="mapMenu" class="map-menu" hidden>
+  <button class="map-option active" data-engine="google"><span>Google</span><span class="tick">✓</span></button>
+  <button class="map-option" data-engine="maplibre"><span>Libre</span><span class="tick">✓</span></button>
+  <button class="map-option" data-engine="leaflet"><span>Leaflet</span><span class="tick">✓</span></button>
+  <button class="map-option" data-engine="osmdroid"><span>osmdroid</span><span class="tick">✓</span></button>
+</div>
+
+<button id="locateBtn" class="locate" aria-label="موقعي الحالي">◎</button>
+
+<div class="panel">
+  <div class="coords" id="coords">لم يتم تحديد نقطة بعد</div>
+  <div class="row">
+    <button id="cancel">إلغاء</button>
+    <button id="confirm" disabled>تأكيد الموقع</button>
+  </div>
+  <div class="attribution" id="attribution">بيانات الخريطة © Google</div>
+</div>
+
+<div id="toast"></div>
+<div id="mapError" class="error" hidden>تعذّر تحميل الخريطة.<br>تحقق من اتصال الإنترنت ثم أعد المحاولة.</div>
+
+<script src="leaflet.js"></script>
+<script src="maplibre-gl.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var errorBox = document.getElementById("mapError");
+  var toastBox = document.getElementById("toast");
+  var coordsBox = document.getElementById("coords");
+  var confirmBtn = document.getElementById("confirm");
+  var locateBtn = document.getElementById("locateBtn");
+  var searchInput = document.getElementById("searchInput");
+  var searchBtn = document.getElementById("searchBtn");
+  var resultsBox = document.getElementById("searchResults");
+  var mapLibreEl = document.getElementById("map");
+  var leafletEl = document.getElementById("mapLeaflet");
+  var mapButton = document.getElementById("mapButton");
+  var mapMenu = document.getElementById("mapMenu");
+  var attribution = document.getElementById("attribution");
+
+  var ATTRIBUTIONS = {
+    google: "بيانات الخريطة © Google",
+    leaflet: "© OpenStreetMap contributors · Leaflet",
+    maplibre: "© OpenStreetMap · OpenFreeMap · MapLibre"
+  };
+
+  function toast(message) {
+    toastBox.textContent = message;
+    toastBox.classList.add("show");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(function () { toastBox.classList.remove("show"); }, 2600);
+  }
+
+  function showError() { errorBox.hidden = false; }
+
+  var params = new URLSearchParams(location.search);
+  var startLat = parseFloat(params.get("lat"));
+  var startLon = parseFloat(params.get("lon"));
+  if (!isFinite(startLat) || Math.abs(startLat) > 90) startLat = 24.7136;
+  if (!isFinite(startLon) || Math.abs(startLon) > 180) startLon = 46.6753;
+
+  var engine = "google";
+  var chosen = null;
+
+  // ---------------------------------------------------------------- Leaflet (Google + OSM)
+
+  var leafletMap = null;
+  var leafletMarker = null;
+  var leafletIcon = null;
+  var baseLayer = null;
+  var googleTileOk = 0;
+  var googleTileErrors = 0;
+  var googleFellBack = false;
+
+  function initLeaflet() {
+    if (leafletMap || !window.L) return;
+
+    leafletMap = L.map("mapLeaflet", { zoomControl: false, attributionControl: false })
+      .setView([chosen ? chosen.lat : startLat, chosen ? chosen.lon : startLon], 13);
+
+    L.control.zoom({ position: "bottomright" }).addTo(leafletMap);
+
+    leafletIcon = L.divIcon({
+      className: "pin",
+      html: '<div class="pin-dot"></div>',
+      iconSize: [26, 26],
+      iconAnchor: [13, 13]
+    });
+
+    leafletMap.on("click", function (event) {
+      resultsBox.hidden = true;
+      searchInput.blur();
+      choose(event.latlng.lat, event.latlng.lng);
+    });
+
+    if (chosen) {
+      setLeafletMarker(chosen.lat, chosen.lon);
+    }
+  }
+
+  function setLeafletMarker(lat, lon) {
+    if (!leafletMap) return;
+    if (!leafletMarker) {
+      leafletMarker = L.marker([lat, lon], { icon: leafletIcon, draggable: true }).addTo(leafletMap);
+      leafletMarker.on("dragend", function () {
+        var position = leafletMarker.getLatLng();
+        choose(position.lat, position.lng);
+      });
+    } else {
+      leafletMarker.setLatLng([lat, lon]);
+    }
+  }
+
+  function setBaseTiles(kind) {
+    if (!leafletMap) return;
+    if (baseLayer) {
+      leafletMap.removeLayer(baseLayer);
+      baseLayer = null;
+    }
+
+    if (kind === "google") {
+      googleTileOk = 0;
+      googleTileErrors = 0;
+      googleFellBack = false;
+
+      baseLayer = L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+        subdomains: ["0", "1", "2", "3"],
+        maxZoom: 20,
+        maxNativeZoom: 20
+      });
+
+      baseLayer.on("tileload", function () {
+        googleTileOk++;
+        errorBox.hidden = true;
+      });
+
+      baseLayer.on("tileerror", function () {
+        googleTileErrors++;
+        if (googleTileErrors >= 6 && googleTileOk === 0) {
+          googleFellBack = true;
+          setBaseTiles("osm");
+          attribution.textContent =
+            "تعذّر تحميل خرائط Google — © OpenStreetMap contributors";
+          toast("تعذّر تحميل خرائط Google — تم التحويل إلى OpenStreetMap");
+        }
+      });
+    } else {
+      baseLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        maxNativeZoom: 19
+      });
+    }
+
+    baseLayer.addTo(leafletMap);
+  }
+
+  // ---------------------------------------------------------------- MapLibre (lazy)
+
+  var map = null;
+  var mlMarker = null;
+  var mlLoaded = false;
+
+  function ensureMapLibre() {
+    if (map) return true;
+    if (!window.maplibregl || (maplibregl.supported && !maplibregl.supported())) {
+      return false;
+    }
+
+    map = new maplibregl.Map({
+      container: "map",
+      style: "https://tiles.openfreemap.org/styles/liberty",
+      center: [chosen ? chosen.lon : startLon, chosen ? chosen.lat : startLat],
+      zoom: 13,
+      attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false
+    });
+
+    map.touchZoomRotate.disableRotation();
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+
+    map.on("load", function () {
+      mlLoaded = true;
+      errorBox.hidden = true;
+    });
+
+    map.on("click", function (event) {
+      resultsBox.hidden = true;
+      searchInput.blur();
+      choose(event.lngLat.lat, event.lngLat.lng);
+    });
+
+    setTimeout(function () {
+      if (!mlLoaded && engine === "maplibre") showError();
+    }, 12000);
+
+    return true;
+  }
+
+  function setMapLibreMarker(lat, lon) {
+    if (!map) return;
+    if (!mlMarker) {
+      var element = document.createElement("div");
+      element.className = "pin";
+      element.innerHTML = '<div class="pin-dot"></div>';
+      mlMarker = new maplibregl.Marker({ element: element, draggable: true, anchor: "center" })
+        .setLngLat([lon, lat])
+        .addTo(map);
+      mlMarker.on("dragend", function () {
+        var position = mlMarker.getLngLat();
+        choose(position.lat, position.lng);
+      });
+    } else {
+      mlMarker.setLngLat([lon, lat]);
+    }
+  }
+
+  // ---------------------------------------------------------------- engine switching
+
+  function setEngine(next) {
+    if (next === "osmdroid") {
+      mapMenu.hidden = true;
+      if (window.MapBridge && window.MapBridge.openOsm) {
+        window.MapBridge.openOsm();
+      }
+      return;
+    }
+
+    if (next === engine) {
+      mapMenu.hidden = true;
+      return;
+    }
+
+    if (next === "google" || next === "leaflet") {
+      mapLibreEl.style.display = "none";
+      leafletEl.style.display = "block";
+      initLeaflet();
+      if (!leafletMap) {
+        toast("تعذّر تحميل الخريطة");
+        return;
+      }
+      setBaseTiles(next === "google" ? "google" : "osm");
+      if (next === "google") {
+        attribution.textContent = ATTRIBUTIONS.google;
+      }
+      leafletMap.invalidateSize();
+      if (chosen) {
+        leafletMap.setView([chosen.lat, chosen.lon], Math.max(leafletMap.getZoom(), 13));
+      }
+      errorBox.hidden = true;
+    } else {
+      if (!ensureMapLibre()) {
+        toast("هذا الجهاز لا يدعم MapLibre (WebGL)");
+        return;
+      }
+      leafletEl.style.display = "none";
+      mapLibreEl.style.display = "block";
+      map.resize();
+      if (chosen) {
+        map.jumpTo({ center: [chosen.lon, chosen.lat] });
+        setMapLibreMarker(chosen.lat, chosen.lon);
+      }
+    }
+
+    engine = next;
+    updateEngineUi();
+  }
+
+  function updateEngineUi() {
+    var labels = {
+      google: "Google",
+      maplibre: "Libre",
+      leaflet: "Leaflet",
+      osmdroid: "osmdroid"
+    };
+    mapButton.textContent = labels[engine] || engine;
+    mapButton.title = "تبديل الخريطة";
+    if (ATTRIBUTIONS[engine]) {
+      attribution.textContent = ATTRIBUTIONS[engine];
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".map-option"), function (option) {
+      option.classList.toggle("active", option.getAttribute("data-engine") === engine);
+    });
+  }
+
+  mapButton.addEventListener("click", function (event) {
+    event.stopPropagation();
+    mapMenu.hidden = !mapMenu.hidden;
+  });
+
+  mapMenu.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
+
+  document.addEventListener("click", function () { mapMenu.hidden = true; });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".map-option"), function (option) {
+    option.addEventListener("click", function () {
+      setEngine(option.getAttribute("data-engine"));
+      mapMenu.hidden = true;
+    });
+  });
+
+  // ---------------------------------------------------------------- shared selection
+
+  function choose(lat, lon) {
+    chosen = { lat: lat, lon: lon };
+
+    setMapLibreMarker(lat, lon);
+    setLeafletMarker(lat, lon);
+
+    coordsBox.textContent = lat.toFixed(6) + ", " + lon.toFixed(6);
+    confirmBtn.disabled = false;
+
+    if (window.MapBridge && window.MapBridge.selectionChanged) {
+      window.MapBridge.selectionChanged(lat, lon);
+    }
+  }
+
+  function focusPoint(lat, lon, zoom) {
+    if ((engine === "google" || engine === "leaflet") && leafletMap) {
+      leafletMap.setView([lat, lon], zoom);
+    } else if (map) {
+      map.flyTo({ center: [lon, lat], zoom: zoom });
+    }
+  }
+
+  // ---------------------------------------------------------------- search
+
+  function runSearch() {
+    var query = searchInput.value.trim();
+    if (!query) return;
+
+    resultsBox.hidden = false;
+    resultsBox.innerHTML = '<div class="result muted">جارٍ البحث…</div>';
+
+    if (window.MapBridge && window.MapBridge.search) {
+      window.MapBridge.search(query);
+    } else {
+      resultsBox.innerHTML = '<div class="result muted">البحث غير متاح</div>';
+    }
+  }
+
+  searchBtn.addEventListener("click", runSearch);
+  searchInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      searchInput.blur();
+      runSearch();
+    }
+  });
+
+  window.onSearchResults = function (payload) {
+    resultsBox.hidden = false;
+
+    if (!payload || payload.error) {
+      resultsBox.innerHTML = '<div class="result muted">تعذّر البحث — حاول لاحقًا</div>';
+      return;
+    }
+
+    var results = payload.results || [];
+    if (!results.length) {
+      resultsBox.innerHTML = '<div class="result muted">لا توجد نتائج</div>';
+      return;
+    }
+
+    resultsBox.innerHTML = "";
+    results.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "result";
+
+      var name = document.createElement("span");
+      name.textContent = item.name;
+      row.appendChild(name);
+
+      var meta = document.createElement("small");
+      meta.textContent = item.lat.toFixed(5) + ", " + item.lon.toFixed(5);
+      row.appendChild(meta);
+
+      row.addEventListener("click", function () {
+        resultsBox.hidden = true;
+        searchInput.blur();
+        focusPoint(item.lat, item.lon, 16);
+        choose(item.lat, item.lon);
+      });
+
+      resultsBox.appendChild(row);
+    });
+  };
+
+  // ---------------------------------------------------------------- current location
+
+  var locateTimer = null;
+
+  function finishLocate() {
+    locateBtn.disabled = false;
+    clearTimeout(locateTimer);
+  }
+
+  locateBtn.addEventListener("click", function () {
+    locateBtn.disabled = true;
+    if (window.MapBridge && window.MapBridge.locate) {
+      window.MapBridge.locate();
+      clearTimeout(locateTimer);
+      locateTimer = setTimeout(function () {
+        finishLocate();
+        toast("تعذّر تحديد موقعك الحالي");
+      }, 15000);
+    } else {
+      finishLocate();
+      toast("تحديد الموقع غير متاح");
+    }
+  });
+
+  window.onNativeLocation = function (lat, lon, ok) {
+    finishLocate();
+    if (!ok) {
+      toast("تعذّر تحديد موقعك — تأكد من تشغيل GPS والسماح بالموقع");
+      return;
+    }
+    resultsBox.hidden = true;
+    focusPoint(lat, lon, 16);
+    choose(lat, lon);
+  };
+
+  // ---------------------------------------------------------------- confirm
+
+  confirmBtn.addEventListener("click", function () {
+    if (!chosen) return;
+    if (window.MapBridge && window.MapBridge.pick) {
+      window.MapBridge.pick(chosen.lat, chosen.lon);
+    }
+  });
+
+  document.getElementById("cancel").addEventListener("click", function () {
+    if (window.MapBridge && window.MapBridge.cancel) {
+      window.MapBridge.cancel();
+    }
+  });
+
+  // ---------------------------------------------------------------- boot: Google first
+
+  initLeaflet();
+  if (!leafletMap) {
+    showError();
+  } else {
+    setBaseTiles("google");
+    attribution.textContent = ATTRIBUTIONS.google;
+    leafletMap.invalidateSize();
+  }
+  updateEngineUi();
+  setTimeout(function () {
+    if (leafletMap) leafletMap.invalidateSize();
+  }, 300);
+})();
+</script>
+</body>
+</html>

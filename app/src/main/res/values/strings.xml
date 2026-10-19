@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OBD2</string>
+
+    <!-- PIN -->
+    <string name="pin_enter">الشاشة المخفية</string>
+    <string name="pin_create">أنشئ رمزًا للشاشة المخفية</string>
+    <string name="pin_confirm">أعد إدخال الرمز للتأكيد</string>
+    <string name="pin_hint_verify">أدخل الرمز المكوّن من ٤ أرقام</string>
+    <string name="pin_hint_set">رمز من ٤ أرقام يفتح الشاشة المخفية</string>
+    <string name="pin_wrong">رمز خاطئ — متبقي %1$d محاولة</string>
+    <string name="pin_locked">محاولات كثيرة — انتظر %1$d ثانية</string>
+    <string name="pin_mismatch">الرمزان غير متطابقين، حاول من جديد</string>
+    <string name="pin_saved">تم حفظ الرمز بنجاح</string>
+    <string name="pin_save_error">تعذّر حفظ الرمز</string>
+    <string name="pin_clear">مسح</string>
+    <string name="pin_cancel">إلغاء</string>
+    <!-- Mock location -->
+    <string name="mock_title">الموقع الوهمي</string>
+    <string name="mock_change_pin">تغيير الرمز</string>
+    <string name="mock_lat">خط العرض</string>
+    <string name="mock_lon">خط الطول</string>
+    <string name="mock_speed">السرعة (م/ث)</string>
+    <string name="mock_interval">الفاصل (ثانية)</string>
+    <string name="mock_start">تشغيل</string>
+    <string name="mock_stop">إيقاف</string>
+    <string name="mock_status_idle">متوقف</string>
+    <string name="mock_running">يعمل</string>
+    <string name="mock_details_running">%1$s • %2$d تحديث</string>
+    <string name="mock_need_app_title">التطبيق غير مختار كمزوّد موقع وهمي</string>
+    <string name="mock_need_app_body">فعّل «خيارات المطوّر» ثم اختر هذا التطبيق في «تحديد تطبيق الموقع الوهمي».</string>
+    <string name="mock_open_dev">فتح خيارات المطوّر</string>
+    <string name="mock_bad_number">أدخل إحداثيات صحيحة</string>
+    <string name="mock_notification_title">الموقع الوهمي يعمل</string>
+    <string name="mock_notification_stop">إيقاف</string>
+
+    <!-- OBD -->
+    <string name="mock_unavailable">خدمة الموقع الوهمي غير متاحة على هذا الجهاز</string>
+
+    <!-- Target picker + favourites -->
+    <string name="pick_target">تحديد الهدف</string>
+    <string name="confirm_pick">تأكيد الموقع</string>
+    <string name="search">بحث</string>
+    <string name="search_hint">ابحث عن مكان…</string>
+    <string name="no_results">لا توجد نتائج</string>
+    <string name="search_failed">تعذّر البحث — حاول لاحقًا</string>
+    <string name="searching">جارٍ البحث…</string>
+    <string name="switch_to_ml">خريطة MapLibre</string>
+    <string name="switch_to_osm">خريطة osmdroid</string>
+    <string name="osm_no_point">لم يتم تحديد نقطة بعد</string>
+    <string name="osm_attribution">© OpenStreetMap contributors</string>
+    <string name="location_failed">تعذّر تحديد موقعك الحالي</string>
+    <string name="favorite_label">الموقع المختار</string>
+    <string name="favorite_none">لم يُحدد موقع</string>
+    <string name="favorite_custom">موقع مخصص</string>
+    <string name="favorite_from_map">هدف من الخريطة</string>
+    <string name="save_favorite">★ حفظ الموقع</string>
+    <string name="favorites_list">المواقع المحفوظة</string>
+    <string name="favorites_title">المواقع المفضلة</string>
+    <string name="favorites_empty">لا توجد مواقع محفوظة بعد</string>
+    <string name="favorites_count">%1$d من %2$d موقع محفوظ</string>
+    <string name="favorites_full">وصلت للحد الأقصى (٢٠ موقعًا)</string>
+    <string name="favorite_name_hint">اسم الموقع</string>
+    <string name="favorite_default_name">موقع %1$d</string>
+    <string name="favorite_saved">تم حفظ «%1$s»</string>
+    <string name="favorite_loaded">تم اختيار «%1$s»</string>
+    <string name="favorite_delete_title">حذف الموقع</string>
+    <string name="favorite_delete_message">حذف «%1$s» من المفضلة؟</string>
+    <string name="favorite_deleted">تم حذف الموقع</string>
+    <string name="map_picked">تم تحديد الموقع من الخريطة</string>
+    <string name="save">حفظ</string>
+    <string name="delete">حذف</string>
+    <string name="close">إغلاق</string>
+    <string name="cancel">إلغاء</string>
+</resources>

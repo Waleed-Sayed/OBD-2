@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1220">
+<title>OBD2</title>
+<style>
+  :root {
+    --bg: #0B1220;
+    --surface: #131E33;
+    --surface-alt: #1B2A45;
+    --primary: #34D399;
+    --accent: #38BDF8;
+    --danger: #F87171;
+    --warning: #FBBF24;
+    --text: #E5EDF7;
+    --muted: #93A4BD;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", "Tahoma", system-ui, -apple-system, sans-serif;
+    overscroll-behavior: none;
+  }
+
+  body {
+    min-height: 100vh;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px 10px;
+    background: linear-gradient(180deg, rgba(11,18,32,0.98), rgba(11,18,32,0.82));
+    backdrop-filter: blur(8px);
+  }
+
+  header h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  header h1 span { color: var(--primary); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .pill::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .pill.online { color: var(--primary); }
+  .pill.online::before { background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+  .pill.demo { color: var(--accent); }
+  .pill.demo::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  main { padding: 4px 16px 20px; }
+
+  .view { display: none; animation: fade 0.18s ease; }
+  .view.active { display: block; }
+
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .gauge-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding: 4px 0 10px;
+  }
+
+  #gauge { width: 240px; height: 240px; }
+
+  .gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -42%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .gauge-center .rpm {
+    display: block;
+    font-size: 34px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gauge-center small { color: var(--muted); font-size: 12px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .stat { text-align: center; padding: 14px 8px; }
+  .stat .label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  .stat .value { display: block; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat small { color: var(--muted); font-size: 11px; }
+
+  button {
+    font: inherit;
+    border: 0;
+    cursor: pointer;
+    color: var(--text);
+    background: var(--surface-alt);
+    border-radius: 14px;
+    padding: 13px 16px;
+  }
+
+  button:disabled { opacity: 0.45; }
+
+  button.primary {
+    width: 100%;
+    background: linear-gradient(135deg, #059669, #34D399);
+    color: #04140E;
+    font-weight: 700;
+  }
+
+  button.ghost { background: transparent; color: var(--accent); }
+  button.danger { color: var(--danger); background: rgba(248, 113, 113, 0.12); }
+
+  .row { display: flex; gap: 10px; }
+  .row > button { flex: 1; }
+
+  .list { display: flex; flex-direction: column; gap: 10px; }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+
+  .item .meta { flex: 1; min-width: 0; }
+  .item .name { font-size: 14px; }
+  .item .address { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .item .num { font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 600; }
+  .item .unit { color: var(--muted); font-size: 11px; margin-inline-start: 4px; }
+
+  .bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-alt);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .bar > i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #34D399, #38BDF8);
+    transition: width 0.25s ease;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 22px 10px;
+  }
+
+  .code {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--warning);
+    direction: ltr;
+  }
+
+  .code-desc { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+  /* About card: credit block */
+  .card.about { position: relative; overflow: hidden; }
+
+  .card.about::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    inset-inline: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #34D399, #38BDF8, transparent);
+  }
+
+  .credit { text-align: center; padding: 4px 6px 4px; }
+
+  .credit-name {
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .credit-name .sep {
+    color: var(--muted);
+    font-weight: 400;
+    margin: 0 8px;
+  }
+
+  .credit-email {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 7px 16px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.10);
+    color: var(--accent);
+    direction: ltr;
+    font-size: 12.5px;
+    text-decoration: none;
+  }
+
+  .credit-rule {
+    height: 1px;
+    margin: 16px 10px 12px;
+    background: linear-gradient(90deg, transparent, rgba(147, 164, 189, 0.30), transparent);
+  }
+
+  .credit-copy {
+    color: var(--muted);
+    font-size: 11.5px;
+    line-height: 1.9;
+    letter-spacing: 0.2px;
+  }
+
+  nav {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    background: rgba(19, 30, 51, 0.97);
+    border-top: 1px solid var(--surface-alt);
+    backdrop-filter: blur(10px);
+  }
+
+  nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 2px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    border-radius: 12px;
+  }
+
+  nav button .icon { font-size: 18px; line-height: 1; }
+  nav button.active { color: var(--primary); background: rgba(52, 211, 153, 0.08); }
+
+  #toast {
+    position: fixed;
+    inset-inline: 24px;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    z-index: 50;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: #22304A;
+    color: var(--text);
+    font-size: 13px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+
+  #toast.show { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="appTitle">OBD<span>2</span></h1>
+  <div id="statusPill" class="pill">غير متصل</div>
+</header>
+
+<main>
+  <!-- 1. Dashboard -->
+  <section id="view-dashboard" class="view active">
+    <div class="card">
+      <h2>دورات المحرك</h2>
+      <div class="gauge-wrap">
+        <canvas id="gauge" width="440" height="440"></canvas>
+        <div class="gauge-center">
+          <span class="rpm" id="rpmValue">0</span>
+          <small>rpm</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card stat">
+        <span class="label">السرعة</span>
+        <span class="value" id="dashSpeed">—</span>
+        <small>km/h</small>
+      </div>
+      <div class="card stat">
+        <span class="label">حرارة التبريد</span>
+        <span class="value" id="dashCoolant">—</span>
+        <small>°C</small>
+      </div>
+      <div class="card stat">
+        <span class="label">جهد البطارية</span>
+        <span class="value" id="dashVoltage">—</span>
+        <small>V</small>
+      </div>
+      <div class="card stat">
+        <span class="label">حمل المحرك</span>
+        <span class="value" id="dashLoad">—</span>
+        <small>%</small>
+      </div>
+    </div>
+
+    <button id="btnConnect" class="primary">اختيار المحوّل</button>
+  </section>
+
+  <!-- 2. Live data -->
+  <section id="view-live" class="view">
+    <div class="card">
+      <h2>البيانات الحية</h2>
+      <div class="hint" id="liveHint">اتصل بالمحوّل لعرض القراءات.</div>
+    </div>
+    <div class="list" id="liveList"></div>
+  </section>
+
+  <!-- 3. DTC -->
+  <section id="view-dtc" class="view">
+    <div class="card">
+      <h2>أكواد الأعطال</h2>
+      <div class="row" style="margin-bottom:12px">
+        <button id="btnReadDtc">قراءة الأعطال</button>
+        <button id="btnClearDtc" class="danger">مسح الأعطال</button>
+      </div>
+      <div class="hint">المسح يطفئ لمبة الأعطال ويحذف الأكواد من وحدة التحكم.</div>
+    </div>
+    <div class="list" id="dtcList">
+      <div class="empty">لم تُقرأ أي أكواد بعد.</div>
+    </div>
+  </section>
+
+  <!-- 4. Settings -->
+  <section id="view-settings" class="view">
+    <div class="card">
+      <h2>المحوّل</h2>
+      <button id="btnRefreshDevices" style="width:100%;margin-bottom:12px">تحديث الأجهزة</button>
+      <div class="list" id="deviceList">
+        <div class="empty">جارٍ البحث عن أجهزة مقترنة…</div>
+      </div>
+      <button id="btnDisconnect" class="danger" style="width:100%;margin-top:12px">قطع الاتصال</button>
+    </div>
+
+    <div class="card about">
+      <h2>حول</h2>
+      <div class="hint" id="aboutText" style="padding:2px 0 4px;min-height:40px;text-align:center">OBD2 — إصدار 1.0</div>
+
+      <div class="credit">
+        <div class="credit-name">وليد سيد<span class="sep">|</span>Waleed Sayed</div>
+        <a class="credit-email" href="mailto:alwadhi555@gmail.com">alwadhi555@gmail.com</a>
+        <div class="credit-rule"></div>
+        <div class="credit-copy">حقوق النشر © <span id="copyYear">2026</span> · جميع الحقوق محفوظة</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-view="dashboard" class="active"><span class="icon">◉</span>القائمة</button>
+  <button data-view="live"><span class="icon">▤</span>البيانات</button>
+  <button data-view="dtc"><span class="icon">⚠</span>الأعطال</button>
+  <button data-view="settings"><span class="icon">⚙</span>الإعدادات</button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var B = window.NativeBridge || null;
+
+  var state = {
+    connected: false,
+    demo: false,
+    device: "",
+    pids: {},
+    codes: [],
+    devices: []
+  };
+
+  var PID_META = {
+    "0C": { label: "دورات المحرك", unit: "rpm", max: 7000 },
+    "0D": { label: "سرعة المركبة", unit: "km/h", max: 200 },
+    "05": { label: "حرارة التبريد", unit: "°C", max: 120 },
+    "04": { label: "حمل المحرك", unit: "%", max: 100 },
+    "11": { label: "فتحة الخانق", unit: "%", max: 100 },
+    "10": { label: "تدفق الهواء", unit: "g/s", max: 100 },
+    "2F": { label: "مستوى الوقود", unit: "%", max: 100 },
+    "0F": { label: "حرارة هواء السحب", unit: "°C", max: 80 },
+    "42": { label: "جهد الوحدة", unit: "V", max: 16 }
+  };
+
+  var DTC_TEXT = {
+    "P0300": "خلل في الإشعال — أسطوانات متعددة",
+    "P0301": "خلل إشعال — الأسطوانة 1",
+    "P0302": "خلل إشعال — الأسطوانة 2",
+    "P0171": "خليط فقير — البنك 1",
+    "P0420": "كفاءة المحوّل الحفّاز منخفضة",
+    "P0128": "الثرمستات لا يغلق",
+    "P0455": "تسريب كبير في نظام الوقود",
+    "P0101": "مدى حساس تدفق الهواء",
+    "P0113": "دائرة حساس حرارة السحب"
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function call(method) {
+    if (!B || typeof B[method] !== "function") return null;
+    try {
+      return B[method].apply(B, Array.prototype.slice.call(arguments, 1));
+    } catch (e) {
+      console.warn("bridge " + method + " failed", e);
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------- UI helpers
+
+  var toastTimer = null;
+  function toast(message) {
+    var el = $("toast");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  function format(value) {
+    if (value === null || value === undefined || isNaN(value)) return "—";
+    var rounded = Math.round(value * 10) / 10;
+    if (Math.abs(rounded - Math.round(rounded)) < 0.05) return String(Math.round(rounded));
+    return rounded.toFixed(1);
+  }
+
+  function setPill(text, cls) {
+    var pill = $("statusPill");
+    pill.textContent = text;
+    pill.className = "pill" + (cls ? " " + cls : "");
+  }
+
+  // ---------------------------------------------------------------- navigation
+
+  var VIEWS = ["dashboard", "live", "dtc", "settings"];
+  var currentView = "dashboard";
+
+  function show(view) {
+    if (VIEWS.indexOf(view) < 0) view = "dashboard";
+    currentView = view;
+
+    VIEWS.forEach(function (name) {
+      var section = $("view-" + name);
+      if (section) section.classList.toggle("active", name === view);
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (button) {
+      button.classList.toggle("active", button.getAttribute("data-view") === view);
+    });
+
+    if (view === "settings") refreshDevices();
+    if (view === "live") renderLive();
+    if (view === "dtc") renderCodes();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (button) {
+    button.addEventListener("click", function () {
+      show(button.getAttribute("data-view"));
+    });
+  });
+
+  window.addEventListener("hashchange", function () {
+    show(location.hash.replace("#", ""));
+  });
+
+  // ---------------------------------------------------------------- gauge
+
+  function drawGauge(rpm) {
+    var canvas = $("gauge");
+    var ctx = canvas.getContext("2d");
+    var size = canvas.width;
+    var cx = size / 2;
+    var cy = size / 2;
+    var radius = size * 0.39;
+    var start = Math.PI * 0.75;
+    var sweep = Math.PI * 1.5;
+    var max = 7000;
+
+    ctx.clearRect(0, 0, size, size);
+
+    ctx.lineWidth = 26;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(147, 164, 189, 0.16)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, start, start + sweep);
+    ctx.stroke();
+
+    var ratio = Math.max(0, Math.min(1, (rpm || 0) / max));
+    if (ratio > 0.004) {
+      var gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, "#34D399");
+      gradient.addColorStop(0.55, "#38BDF8");
+      gradient.addColorStop(1, "#F87171");
+      ctx.strokeStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start, start + sweep * ratio);
+      ctx.stroke();
+    }
+
+    var angle = start + sweep * ratio;
+    var inner = radius - 46;
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#E5EDF7";
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * (radius - 20), cy + Math.sin(angle) * (radius - 20));
+    ctx.lineTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(147, 164, 189, 0.9)";
+    ctx.font = "600 20px 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (var i = 0; i <= 7; i++) {
+      var tickAngle = start + sweep * (i / 7);
+      var tx = cx + Math.cos(tickAngle) * (radius - 34);
+      var ty = cy + Math.sin(tickAngle) * (radius - 34);
+      ctx.fillText(String(i), tx, ty);
+    }
+  }
+
+  // ---------------------------------------------------------------- render
+
+  function renderDashboard() {
+    var rpm = state.pids["0C"];
+    var rpmText = rpm ? Math.round(rpm.value) : 0;
+    $("rpmValue").textContent = rpmText;
+    drawGauge(rpmText);
+
+    $("dashSpeed").textContent = state.pids["0D"] ? format(state.pids["0D"].value) : "—";
+    $("dashCoolant").textContent = state.pids["05"] ? format(state.pids["05"].value) : "—";
+    $("dashVoltage").textContent = state.pids["42"] ? format(state.pids["42"].value) : "—";
+    $("dashLoad").textContent = state.pids["04"] ? format(state.pids["04"].value) : "—";
+  }
+
+  function renderLive() {
+    var list = $("liveList");
+    list.innerHTML = "";
+
+    var order = ["0C", "0D", "05", "04", "11", "10", "2F", "0F"];
+    var hasAny = false;
+
+    order.forEach(function (pid) {
+      var meta = PID_META[pid];
+      var reading = state.pids[pid];
+
+      var item = document.createElement("div");
+      item.className = "item";
+
+      var metaBox = document.createElement("div");
+      metaBox.className = "meta";
+
+      var name = document.createElement("div");
+      name.className = "name";
+      name.textContent = meta.label;
+      metaBox.appendChild(name);
+
+      var bar = document.createElement("div");
+      bar.className = "bar";
+      var fill = document.createElement("i");
+      bar.appendChild(fill);
+      metaBox.appendChild(bar);
+
+      var value = document.createElement("div");
+      value.style.textAlign = "center";
+
+      var num = document.createElement("span");
+      num.className = "num";
+      num.textContent = reading ? format(reading.value) : "—";
+
+      var unit = document.createElement("span");
+      unit.className = "unit";
+      unit.textContent = meta.unit;
+
+      value.appendChild(num);
+      value.appendChild(unit);
+
+      item.appendChild(metaBox);
+      item.appendChild(value);
+      list.appendChild(item);
+
+      if (reading) {
+        hasAny = true;
+        var pct = Math.max(0, Math.min(100, (reading.value / meta.max) * 100));
+        fill.style.width = pct + "%";
+      }
+    });
+
+    $("liveHint").textContent = hasAny
+      ? "تحديث كل ثانية من وحدة التحكم."
+      : (state.connected ? "بانتظار أول قراءة…" : "اتصل بالمحوّل لعرض القراءات.");
+  }
+
+  function renderCodes() {
+    var list = $("dtcList");
+    list.innerHTML = "";
+
+    if (!state.codes.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "لا توجد أكواد مسجلة.";
+      list.appendChild(empty);
+      return;
+    }
+
+    state.codes.forEach(function (code) {
+      var item = document.createElement("div");
+      item.className = "item";
+      item.style.display = "block";
+
+      var codeEl = document.createElement("div");
+      codeEl.className = "code";
+      codeEl.textContent = code;
+      item.appendChild(codeEl);
+
+      var desc = document.createElement("div");
+      desc.className = "code-desc";
+      desc.textContent = DTC_TEXT[code] || "كود غير معروف في القاموس المحلي.";
+      item.appendChild(desc);
+
+      list.appendChild(item);
+    });
+  }
+
+  function renderConnection() {
+    if (state.demo) {
+      setPill("محاكاة", "demo");
+    } else if (state.connected) {
+      setPill(state.device || "متصل", "online");
+    } else {
+      setPill("غير متصل");
+    }
+  }
+
+  function renderDevices() {
+    var list = $("deviceList");
+    list.innerHTML = "";
+
+    if (!state.devices.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "لا توجد أجهزة بلوتوث مقترنة. اقترن بـ ELM327 من إعدادات النظام أولًا.";
+      list.appendChild(empty);
+      return;
+    }
+
+    state.devices.forEach(function (device) {
+      var item = document.createElement("button");
+      item.className = "item";
+      item.style.width = "100%";
+      item.style.textAlign = "right";
+
+      var meta = document.createElement("div");
+      meta.className = "meta";
+
+      var name = document.createElement("div");
+      name.className = "name";
+      name.textContent = device.name;
+
+      var address = document.createElement("div");
+      address.className = "address";
+      address.textContent = device.address;
+
+      meta.appendChild(name);
+      meta.appendChild(address);
+
+      var connect = document.createElement("span");
+      connect.className = "num";
+      connect.style.fontSize = "13px";
+      connect.style.color = "var(--accent)";
+      connect.textContent = "اتصال";
+
+      item.appendChild(meta);
+      item.appendChild(connect);
+
+      item.addEventListener("click", function () {
+        connect.textContent = "…";
+        call("connect", device.address);
+      });
+
+      list.appendChild(item);
+    });
+  }
+
+  // ---------------------------------------------------------------- hidden entry
+  //
+  // No visible control opens the second screen. Two quiet gestures request the
+  // PIN from native code: a long press on the title, and seven quick taps on the
+  // version line in Settings.
+
+  function requestHidden() {
+    call("requestHidden");
+  }
+
+  var tapCount = 0;
+  var tapTimer = null;
+  $("aboutText").addEventListener("click", function () {
+    tapCount++;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(function () { tapCount = 0; }, 1500);
+    if (tapCount >= 7) {
+      tapCount = 0;
+      requestHidden();
+    }
+  });
+
+  var pressTimer = null;
+  var title = $("appTitle");
+
+  title.addEventListener("pointerdown", function () {
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(requestHidden, 900);
+  });
+
+  ["pointerup", "pointercancel", "pointerleave", "contextmenu"].forEach(function (eventName) {
+    title.addEventListener(eventName, function () { clearTimeout(pressTimer); });
+  });
+
+  // ---------------------------------------------------------------- native events
+
+  window.OBD = {
+    emit: function (event) {
+      if (!event || !event.type) return;
+
+      switch (event.type) {
+        case "state":
+          handleState(event);
+          break;
+
+        case "status":
+          state.connected = !!event.connected;
+          state.demo = false;
+          renderConnection();
+          break;
+
+        case "pid":
+          handlePid(event);
+          break;
+
+        case "dtc":
+          state.codes = Array.isArray(event.codes) ? event.codes : [];
+          renderCodes();
+          toast(state.codes.length ? "تم العثور على " + state.codes.length + " كود" : "لا أعطال مسجلة");
+          break;
+
+        case "dtcCleared":
+          state.codes = [];
+          renderCodes();
+          toast("تم مسح الأعطال");
+          break;
+
+        case "error":
+          toast(event.message || "خطأ غير معروف");
+          break;
+
+        default:
+          console.log("unhandled native event", event);
+      }
+    },
+
+    handleBack: function () {
+      if (currentView !== "dashboard") {
+        show("dashboard");
+        return true;
+      }
+      return false;
+    }
+  };
+
+  function handleState(event) {
+    var next = event.state || "disconnected";
+    state.device = event.device || "";
+    state.connected = next === "connected";
+    state.demo = state.connected && state.device === "وضع المحاكاة";
+
+    if (next === "error") {
+      state.connected = false;
+      state.demo = false;
+      toast(event.message || "فشل الاتصال");
+    }
+    if (next === "connected" && event.message) {
+      toast(event.message);
+    }
+
+    renderConnection();
+    if (!state.connected) {
+      state.pids = {};
+      renderDashboard();
+      renderLive();
+    }
+  }
+
+  function handlePid(event) {
+    if (!event.pid) return;
+    state.pids[event.pid] = {
+      value: Number(event.value),
+      unit: event.unit || "",
+      label: event.label || event.pid
+    };
+
+    if (event.pid === "0C" || currentView === "dashboard") renderDashboard();
+    if (currentView === "live") renderLive();
+  }
+
+  // ---------------------------------------------------------------- polling
+
+  var pollTimer = null;
+
+  function pollPids() {
+    if (!state.connected || document.hidden) return;
+    var order = currentView === "live"
+      ? ["0C", "0D", "05", "04", "11", "10", "2F", "0F"]
+      : ["0C", "0D", "05", "42", "04"];
+
+    order.forEach(function (pid) {
+      call("queryPid", pid);
+    });
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(pollPids, 1000);
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) pollPids();
+  });
+
+  // ---------------------------------------------------------------- actions
+
+  function refreshDevices() {
+    var raw = call("getDevices");
+    if (!raw) {
+      state.devices = [];
+    } else {
+      try { state.devices = JSON.parse(raw) || []; } catch (e) { state.devices = []; }
+    }
+    renderDevices();
+  }
+
+  $("btnConnect").addEventListener("click", function () {
+    show("settings");
+    refreshDevices();
+  });
+
+  $("btnRefreshDevices").addEventListener("click", refreshDevices);
+
+  $("btnDisconnect").addEventListener("click", function () {
+    call("disconnect");
+  });
+
+  $("btnReadDtc").addEventListener("click", function () {
+    if (!state.connected) { toast("اتصل بالمحوّل أولًا"); return; }
+    call("readDtcs");
+  });
+
+  $("btnClearDtc").addEventListener("click", function () {
+    if (!state.connected) { toast("اتصل بالمحوّل أولًا"); return; }
+    if (confirm("مسح كل أكواد الأعطال؟")) call("clearDtcs");
+  });
+
+  // ---------------------------------------------------------------- boot
+
+  drawGauge(0);
+
+  var status = null;
+  var statusRaw = call("getStatus");
+  if (statusRaw) {
+    try { status = JSON.parse(statusRaw); } catch (e) { status = null; }
+  }
+  if (status) {
+    state.connected = !!status.connected;
+  }
+
+  var yearEl = $("copyYear");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+  renderConnection();
+  refreshDevices();
+  startPolling();
+
+  show(location.hash.replace("#", "") || "dashboard");
+})();
+</script>
+</body>
+</html>
