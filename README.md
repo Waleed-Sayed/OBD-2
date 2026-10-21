@@ -1,13 +1,25 @@
-# OBD2 — تطبيق أندرويد لقراءة بيانات المركبة
+<div align="center" dir="rtl">
 
-تطبيق أندرويد مكتوب بلغة **Java** يتصل بجهاز **ELM327** عبر البلوتوث، ويعرض بيانات المحرك الحية
-وأكواد الأعطال في واجهة عربية مبنية بـ `HTML` من ملفات محلية داخل التطبيق.
+# 🚗 OBD2 — قارئ بيانات وأعطال المركبة
+### Android ELM327 Diagnostic & Live Engine Data Reader
 
-**English:** A native Android app written in **Java** that connects to an **ELM327** Bluetooth
-adapter, streams live engine data, and reads or clears diagnostic trouble codes — inside a fast
-Arabic RTL interface built with a local `HTML`.
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
+  <img src="https://img.shields.io/badge/Language-Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java" />
+  <img src="https://img.shields.io/badge/UI-HTML5%20%2F%20JS-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5" />
+  <img src="https://img.shields.io/badge/Protocol-ELM327%20SPP-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white" alt="Bluetooth" />
+  <img src="https://img.shields.io/badge/API-26%2B%20(Target%2036)-brightgreen?style=for-the-badge" alt="API Level" />
+</p>
 
-## لقطات الشاشة | Screenshots
+**تطبيق أندرويد أصيل مكتوب بلغة Java يتصل بجهاز فحص المركبات ELM327 عبر البلوتوث، لعرض بيانات المحرك الحية وفحص ومسح أكواد الأعطال في واجهة عربية سريعة (RTL) تعمل بالكامل دون إنترنت.**
+
+<p align="center" dir="ltr">
+  <i>A native Android app written in <b>Java</b> that connects to an <b>ELM327</b> Bluetooth adapter, streams live engine data, and reads or clears diagnostic trouble codes — inside a fast Arabic RTL interface built with local <code>HTML</code>.</i>
+</p>
+
+---
+
+## 📸 لقطات الشاشة | Screenshots
 
 <div align="center" dir="ltr">
   <img src="screenshots/dashboard.png" width="22%" alt="Dashboard" />
@@ -16,92 +28,66 @@ Arabic RTL interface built with a local `HTML`.
   <img src="screenshots/settings.png" width="22%" alt="Settings" />
 </div>
 
-## المزايا
+---
 
-- **لوحة قيادة** مباشرة: دورات المحرك، السرعة، حرارة التبريد، جهد البطارية، وحمل المحرك.
-- **بيانات حية** لثمانية حساسات مع أشرطة قياس وتحديث كل ثانية.
-- **أكواد الأعطال**: قراءة أكواد `P/C/B/U` ومسحها، مع قاموس وصفي مختصر للأكواد الشائعة.
-- **إدارة الاتصال**: عرض الأجهزة المقترنة، الاتصال والقطع، وعرض حالة الاتصال لحظيًا.
-- واجهة عربية RTL بثيم داكن، تعمل بالكامل دون إنترنت.
+## ✨ المزايا الرئيسية | Features
 
-## المتطلبات
+📊 **لوحة قيادة مباشرة (Dashboard)**<br>
+عرض لحظي لدورات المحرك (RPM)، السرعة، حرارة سائل التبريد، جهد البطارية، وحمل المحرك.
 
-- Android Studio حديثة (AGP 9.2.1، Gradle 9.4.1).
-- JDK 17 أو أحدث.
-- Android SDK 37 وأداة بناء 36+.
-- جهاز ELM327 يدعم Bluetooth Classic (SPP) للتجربة على سيارة حقيقية.
+⚡ **بيانات حية (Live Data)**<br>
+قراءة 8 حساسات أساسية مع أشرطة قياس تفاعلية وتحديث مستمر كل ثانية.
 
-## البناء
+🛠️ **فحص أكواد الأعطال (DTCs)**<br>
+قراءة أكواد الفئات (`P` / `C` / `B` / `U`) ومسحها من كمبيوتر السيارة، مع قاموس وصفي مختصر للأكواد الشائعة.
 
+📡 **إدارة اتصال ذكية**<br>
+استعراض أجهزة البلوتوث المقترنة، الاتصال والقطع السريع، ومراقبة حالة الاتصال لحظيًا.
 
-> مسار المشروع يحتوي حروفًا عربية، لذلك فُعّل `android.overridePathCheck=true` في
-> `gradle.properties`. إن نقلت المشروع إلى مسار إنجليزي يمكنك حذف السطر.
-
-## البنية
-
-أهم الملفات في المشروع:
-
-```
-app/src/main/
-├── AndroidManifest.xml
-├── assets/obd/index.html          ← الواجهة كاملة (HTML/CSS/JS)
-├── java/com/waleedsayed/obd2/
-│   ├── MainActivity.java          ← WebView + الجسر مع الطبقة الأصلية
-│   └── obd/
-│       ├── ObdManager.java        ← اتصال البلوتوث وأوامر ELM327
-│       ├── ObdBridge.java         ← الواجهة التي تستدعيها الصفحة
-│       └── PidTable.java          ← فك ترميز PIDs و DTCs
-└── res/                           ← التخطيطات والألوان والأيقونة
-```
-
-## الطبقة التقنية
-
-### البلوتوث و ELM327
-
-- الاتصال عبر **RFCOMM/SPP** (`00001101-0000-1000-8000-00805F9B34FB`) على خيط خلفي واحد،
-  فلا تتجمد الواجهة أثناء القراءة.
-- تسلسل التهيئة: `ATZ`, `ATE0`, `ATL0`, `ATS0`, `ATSP0` ثم أوامر `01xx` لقراءة الحساسات.
-- القراءة تنتهي عند وصول محث `>` من المحوّل، مع مهلة لكل أمر.
-- النتائج تُنشر كأحداث JSON: `state`, `pid`, `dtc`, `dtcCleared`, `raw`, `error`.
-
-### فك الترميز
-
-- معادلات SAE J1979 للـ PIDs المدعومة (RPM، السرعة، الحرارة، MAF، الخانق، الجهد…).
-- أكواد الأعطال تُفكّ إلى صيغة `P0300` عبر بايتين لكل كود، وتُتجاهل الخانات الفارغة.
-
-### واجهة HTML والجسر
-
-الصفحة واحدة (`index.html`) بأربع شاشات: القائمة، البيانات، الأعطال، الإعدادات، وتنقّل سفلي
-وموجّه بالـ hash. تُحمَّل من `file:///android_asset` ولا تتصل بأي نطاق خارجي.
-
-الدوال المتاحة للصفحة عبر `window.NativeBridge`:
-
-| الدالة | الوظيفة |
-|---|---|
-| `getStatus()` | حالة JSON: هل الاتصال قائم |
-| `getDevices()` | الأجهزة المقترنة |
-| `connect(address)` | الاتصال بجهاز |
-| `disconnect()` | قطع الاتصال |
-| `queryPid("0C")` | قراءة PID (الرد عبر حدث `pid`) |
-| `readDtcs()` / `clearDtcs()` | قراءة الأعطال ومسحها |
-
-والردود تعود من Java إلى JavaScript عبر:
-
-```js
-window.OBD.emit({ type: "pid", pid: "0C", value: 812, unit: "rpm" });
-```
-
-## ملاحظات تقنية
-
-- محوّلات ELM327 الكلاسيكية عبر **Bluetooth Classic/SPP** فقط؛ محوّلات BLE تحتاج مسار GATT مستقلًا.
-- `minSdk 26` و`targetSdk 36` و`compileSdk 37`.
-- لا تُخزَّن قراءات المحرك على القرص، ولا يخرج أي شيء من الجهاز.
-- الصفحة محلية بالكامل، والجسر مقيّد بها.
+🌙 **واجهة عربية متكاملة**<br>
+تصميم عربي (RTL) بثيم داكن مريح للعين، يعمل محليًا بنسبة 100% دون الحاجة للإنترنت.
 
 ---
 
-## حقوق النشر
+## ⚙️ المتطلبات والبيئة | Requirements
 
-© 2026 **وليد سيد | Waleed Sayed**. جميع الحقوق محفوظة.
+| المتطلب | المواصفات |
+| :---: | :---: |
+| **بيئة التطوير** | Android Studio حديثة (`AGP 9.2.1` ، `Gradle 9.4.1`) |
+| **إصدار Java** | `JDK 17` أو أحدث |
+| **حزمة التطوير (SDK)** | `minSdk 26` \| `targetSdk 36` \| `compileSdk 37` (Build Tools `36+`) |
+| **العتاد المطلوب** | جهاز **ELM327** يدعم `Bluetooth Classic (SPP)` للتجربة الفعلية |
 
-للتواصل: [alwadhi555@gmail.com](mailto:alwadhi555@gmail.com)
+---
+
+## 🚀 البناء والتشغيل | Build & Run
+
+**1.** انسخ المستودع إلى جهازك ثم افتحه عبر **Android Studio**.<br>
+**2.** انتظر انتهاء مزامنة ملفات **Gradle**، ثم شغّل التطبيق مباشرة على هاتف أندرويد حقيقي.
+
+> **💡 ملاحظة حول مسار المشروع:**<br>
+> مسار المشروع يحتوي حروفًا عربية، لذلك فُعّل `android.overridePathCheck=true` في `gradle.properties`.<br>
+> إن نقلت المشروع إلى مسار إنجليزي يمكنك حذف السطر.
+
+---
+
+## 📂 بنية المشروع | Project Structure
+
+أهم الملفات والمجلدات المكونة للمشروع:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+app/src/main/
+├── AndroidManifest.xml
+├── assets/obd/
+│   └── index.html                 # الواجهة الكاملة (HTML / CSS / JS)
+├── java/com/waleedsayed/obd2/
+│   ├── MainActivity.java          # إعداد WebView + ربط الجسر مع الطبقة الأصلية
+│   └── obd/
+│       ├── ObdManager.java        # إدارة اتصال البلوتوث وأوامر ELM327
+│       ├── ObdBridge.java         # الواجهة البرمجية (JS Interface) التي تستدعيها الصفحة
+│       └── PidTable.java          # معادلات فك ترميز PIDs وأكواد الأعطال DTCs
+└── res/                           # التخطيطات، الألوان، وأيقونة التطبيق
